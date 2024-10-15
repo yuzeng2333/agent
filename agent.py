@@ -3,17 +3,19 @@ import numpy as np
 from vcdvcd import VCDVCD
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
-from langchain.llms import OpenAI
-from langchain.embeddings import OpenAIEmbeddings
+from langchain_community.llms import OpenAI
+from langchain_openai import OpenAIEmbeddings
+
 
 # Step 1: Parse VCD File
 vcd = VCDVCD('simulation.vcd')
-signal_trace = vcd['out'].tv
-
+# print all the signal names: print(vcd.references_to_ids.keys())
+signal_trace = vcd['opposite_tb.out[3:0]'].tv
+design_doc = "ridecore.pdf"
 # Step 2: Create Knowledge Base
 # Assume 'design_docs' is a list of strings containing the documentation
 embeddings = OpenAIEmbeddings()
-doc_vectors = embeddings.embed_documents(design_docs)
+doc_vectors = embeddings.embed_documents(design_doc)
 dimension = len(doc_vectors[0])
 index = faiss.IndexFlatL2(dimension)
 index.add(np.array(doc_vectors))
@@ -41,7 +43,7 @@ prompt = PromptTemplate(
     """
 )
 
-llm = OpenAI(model_name="gpt-4")
+llm = OpenAI(model_name="gpt-4o-mini-2024-07-18")
 chain = LLMChain(llm=llm, prompt=prompt)
 
 result = chain.run({
